@@ -6,7 +6,7 @@
 
 Your team runs Meta, TikTok, Google Ads and Snapchat for many ecommerce brands. Every question means opening each client's ad managers, their Shopify and their courier, one tab at a time.
 
-With this plugin, every client brand gets its own folder in Claude Code, connected live to everything that client runs, through [Analify](https://analify.scalyax.ai), the AI Business Brain and Ecommerce Operator. Open the client's folder and ask: "What did we actually make yesterday after ads, shipping and returns?", "Which ad sets lose money after returns?", "Audit last month's Meta and TikTok." Claude reads the client's live store and ad data, never another client's. Then it saves what it found to that client's Business Brain, so next week starts where you stopped.
+With this plugin, every client brand gets its own folder in Claude Code, connected live to everything that client runs, through [Analify](https://analify.scalyax.ai), the AI Business Brain and Ecommerce Operator. Open the client's folder and ask: "What did we actually make yesterday after ads, shipping and returns?", "Which ad sets lose money after returns?", "Audit last month's Meta and TikTok." Claude reads that client's live store and ad data through that client's own connection. Then it saves what it found to that client's Business Brain, so next week starts where you stopped.
 
 Open. Ask. Approve. Done.
 
@@ -14,14 +14,14 @@ Open. Ask. Approve. Done.
 
 ## What changes for your agency
 
-- **No more tab-hopping.** One folder per client, connected to the client's Shopify, Meta, TikTok, Google Ads, Snapchat and couriers through one Analify connection.
-- **Clients never mix.** Inside a client's folder, every other client's connection is blocked. Claude can't start until Analify confirms it's signed in to the right brand.
+- **No more tab-hopping.** One folder per client, connected to the client's store (Shopify, WooCommerce, Salla, EasyOrders or Amazon), Meta, TikTok, Google Ads, Snapchat and couriers through one Analify connection.
+- **One client per folder, checked.** Inside a client's folder, every other Analify connection is blocked, and the client's own connection stays blocked until Analify confirms it's signed in to that client's brand. After that, the brand is checked by its Analify ID every session. This guards against using the wrong client's Analify data; it doesn't stop someone opening another client's files on the same computer, so keep each person to their own clients' folders.
 - **Work that adapts to each client.** The plugin reads what each client has connected and works with exactly that. It says plainly what's missing, for example "no Shopify, so no real profit yet".
 - **The work stays with the client.** After real work, Claude saves to that client's Business Brain:
   - findings, with the data behind them
   - decisions and client rules
   - your reports
-  - a session record the founder can review
+  - a session record the founder can review, with emails, phone numbers, card numbers and keys removed first
 
   Everything is labelled with your agency's name and the date. The founder's own rules always rank above yours.
 - **Walk into every client call already knowing the story.** `/analify-agency:brief` gives the morning picture for one client: real profit after all costs, the ads that need attention, and what's missing.
@@ -73,10 +73,11 @@ Open the client's folder and work as you normally do.
 | `/analify-agency:save` | Save something to this client's Brain right now: a finding, a decision, a client rule, a report |
 | `/analify-agency:connect` | Sign in again, or refresh what this client has connected |
 | `/analify-agency:clients` | Setup checklist across all clients (run it in the agency folder) |
-| `/analify-agency:add-client` | Add one client, or fix a client's name, brand or website |
+| `/analify-agency:add-client` | Add one client, or update a client's brand or details |
+| `/analify-agency:rename-client` | Rename a client; keeps its connection and sign-in |
 | `/analify-agency:import-clients` | Add many clients from a CSV |
 
-Put finished audits and reports in the client's `reports/` folder as Markdown or CSV, and they go to that client's Brain at the next save. To turn saving off for a client, run `/analify-agency:add-client "Name" --autosave off`.
+Put finished audits and reports in the client's `reports/` folder as Markdown or CSV, and they go to that client's Brain at the next save. **Only `reports/` is shared.** Keep agency-only notes (your margins, internal methods, drafts) anywhere else in the folder, such as `private/`, and they stay with you. To turn saving off for a client, run `/analify-agency:add-client "Name" --autosave off`.
 
 ## What Analify connects
 
@@ -84,7 +85,7 @@ Put finished audits and reports in the client's `reports/` folder as Markdown or
 
 | | Platforms |
 | :- | :- |
-| Store | Shopify |
+| Store | Shopify · WooCommerce, Salla, EasyOrders, Amazon *(new)* |
 | Ads | Meta Ads · TikTok Ads · Google Ads *(beta)* · Snapchat Ads *(new)* |
 | Analytics | Google Analytics *(beta)* |
 | Shipping | Bosta · Bosta Fulfillment · Aramex, Mylerz, ShipBlu, J&T Express, DHL Express, FedEx, UPS, SMSA, Turbo, QP Express *(beta)* |
@@ -138,7 +139,7 @@ Connected in Analify, and available to Claude through the same client connection
   - **Session start:** tells Claude which client the folder is for and what that client has connected.
   - **Before each Analify call:** blocks connections that belong to other businesses.
   - **After each call:** notes which brand the connection is signed in to, which platforms are connected, and how much client work was done.
-  - **At the end of a turn:** writes a session record into the folder's `.analify/sessions/` and, after real work, asks Claude to save to the client's Brain. To write that record, it reads the current session's transcript.
+  - **At the end of a turn:** writes a session record into the folder's `.analify/sessions/` and, after real work, asks Claude to save to the client's Brain. To write that record, it reads the current session's transcript and removes emails, phone numbers, card numbers and key-like strings. It also tells you when Analify refused a save, so missing work isn't mistaken for saved work.
 - **Setup script** (`scripts/clients.mjs`):
   - creates the client folders
   - registers each client's connection with Claude Code's own `claude mcp add --scope local`, which saves it in your Claude Code settings for that folder only
@@ -150,7 +151,7 @@ Connected in Analify, and available to Claude through the same client connection
 - **Where data goes:** only to `https://analify-mcp.scalyax.ai` (Analify, operated by Scalyax), through the tool calls Claude makes. You see every call in the session.
 - **What comes back:** figures from the client's connected accounts, read with the access the client gave Analify.
 - **Read-only unless you allow changes** on the Analify sign-in screen. Even then, each change waits for your approval.
-- **What is saved to a client's Brain:** findings, decisions, client rules, reports and session records from that client's folder, while autosave is on. Passwords, keys and customers' personal details are never sent.
+- **What is saved to a client's Brain:** findings, decisions, client rules, files in `reports/`, and session records from that client's folder, while autosave is on. Session records are cleaned of emails, phone numbers, card numbers and keys before they leave your computer, and Claude is told not to send passwords or customers' details. That cleaning is a safety net, not a guarantee: it can't spot a customer's name or street address, so don't paste customer lists into a client session.
 - **Revoke access** any time in Analify → Settings → Developer → Applications.
 
 Privacy policy: https://analify.scalyax.ai/en/privacy · Terms: https://analify.scalyax.ai/en/terms · Docs: https://analify-ai.readme.io/docs/mcp

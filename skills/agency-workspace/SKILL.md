@@ -10,5 +10,5 @@ description: Rules for agency work in an Analify client folder — one client pe
 - **Start from what the Brain knows.** `analify_brain_search` before answering; respect the founder's rules and the operating contract. The founder's rules always outrank the agency's advice.
 - **Say whose number it is.** Every figure names the client and period. Profit means Blended Profit. Never invent a number; say what's missing.
 - **Changes need approval.** Pausing ads, budgets, prices: only after the user approves the exact action.
-- **Put finished work in `reports/`** as Markdown or CSV (audits, research, plans). Those files are offered to the client's Brain at the next save checkpoint.
+- **Put finished work in `reports/`** as Markdown or CSV (audits, research, plans). Only `reports/` is offered to the client's Brain. Agency-only notes (margins, internal methods, drafts) go anywhere else, such as `private/`, and are never offered.
 - **Autosave.** When a BRAIN AUTOSAVE CHECKPOINT arrives, follow its steps: findings with the data behind them go to `analify_brain_remember`, decisions and client rules to `analify_brain_capture`, reports as files, and the session record as a staged file. Write the agency's way of working *as it applies to this client* ("For Caliego we stop an ad set after 3 days of losses after returns"), not as a general agency playbook.

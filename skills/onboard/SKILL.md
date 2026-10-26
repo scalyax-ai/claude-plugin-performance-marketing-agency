@@ -19,7 +19,7 @@ Tell them this folder now holds all their clients, one folder each. Then ask the
 Ask: "Paste your clients' website addresses, one per line (or the path to a CSV with columns name,brand,site,shopify,meta)."
 - Websites: `node "${CLAUDE_PLUGIN_ROOT}/scripts/clients.mjs" add-sites <url> <url> ...`
 - CSV: `node "${CLAUDE_PLUGIN_ROOT}/scripts/clients.mjs" import <file.csv>`
-Show the list of clients created. Ask if any name is wrong; fix it with `node "${CLAUDE_PLUGIN_ROOT}/scripts/clients.mjs" add "<Right name>" --site <url>` (an Arabic-only name needs `--slug <latin-name>`). If the brand is named differently in Analify, add `--brand "<Analify brand name>"`.
+Show the list of clients created. Two websites with the same name (nour.com and nour.ae) become two clients ("Nour" and "Nour AE"). Ask if any name is wrong; fix it with `node "${CLAUDE_PLUGIN_ROOT}/scripts/clients.mjs" rename "<current name or website>" "<right name>"`, adding `--brand "<Analify brand name>"` if the brand is named differently in Analify. Renaming keeps the client's connection and sign-in.
 
 ## Step 3 — Connect each client's accounts in Analify
 Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/clients.mjs" open` to open Analify's Agency → Clients page (no Analify account yet: `open signup`). Then tell them, for each client:
