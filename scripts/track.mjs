@@ -14,6 +14,7 @@ import {
   saveState,
   splitMcpName,
   findOrganization,
+  saveResult,
   summarizeIntegrations,
   connectedPlatforms,
   platformGaps,
@@ -65,10 +66,22 @@ if (name && name.server === config.serverName) {
       context = `${config.name} has connected in Analify: ${on.length ? on.join(', ') : 'nothing yet'}.` +
         (gaps.length ? ` Still missing: ${gaps.join('; ')}. Work only with what is connected and say plainly what a missing platform means for the answer.` : '')
     }
-  } else if (BRAIN_SAVE_TOOLS.has(name.tool)) {
-    state.saveCalls += 1
-  } else if (name.tool === 'analify_call_write_tool' && BRAIN_SAVE_DISPATCHED.has(input.tool_input?.tool_name)) {
-    state.saveCalls += 1
+  } else if (
+    (BRAIN_SAVE_TOOLS.has(name.tool) && name.tool !== 'analify_brain_session_finish') ||
+    (name.tool === 'analify_call_write_tool' && BRAIN_SAVE_DISPATCHED.has(input.tool_input?.tool_name))
+  ) {
+    // Count a save only when Analify accepted it.
+    const result = saveResult(input.tool_response)
+    if (result.ok) {
+      state.saveCalls += 1
+      config.lastSavedAt = new Date().toISOString().slice(0, 10)
+      saveClientConfig(client)
+    } else {
+      state.failedSaves = (state.failedSaves || 0) + 1
+      state.lastSaveError = result.note
+    }
+  } else if (name.tool === 'analify_brain_session_finish') {
+    // Closing a capture session is not a save by itself.
   } else if (!name.tool.endsWith('_search_tools') && name.tool !== 'analify_get_context') {
     state.workCalls += 1
   }

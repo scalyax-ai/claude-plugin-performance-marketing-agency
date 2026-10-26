@@ -11,7 +11,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { readStdin, parseJson, findClient, loadState, saveState, emit, today } from './lib.mjs'
+import { readStdin, parseJson, findClient, loadState, saveState, emit, today, redact } from './lib.mjs'
 
 export const MIN_WORK_CALLS = 2
 const RECORD_MAX_CHARS = 40_000
@@ -72,7 +72,7 @@ export function sessionRecord(transcriptPath, fromLine) {
       }
     }
   }
-  let text = out.join('\n\n')
+  let text = redact(out.join('\n\n'))
   if (text.length > RECORD_MAX_CHARS) {
     const half = RECORD_MAX_CHARS / 2
     text = `${text.slice(0, half)}\n\n[… middle of the session left out to keep this record short …]\n\n${text.slice(-half)}`
@@ -116,9 +116,9 @@ export function checkpointReason({ config, sessionId, recordPath, files, boundId
     otherFiles.length
       ? `   These files are not plain text, so they can't be sent from here; tell the user to add them in Analify → Brain → Library: ${otherFiles.join(', ')}.`
       : null,
-    `4. Session record (kept for the founder, not used for answers): Read ${recordPath} and send it with ${p}analify_call_write_tool, tool_name "analify_brain_files_post", arguments { filename: "${path.basename(recordPath)}", text: <the file's exact content, word for word — do not summarise or rewrite it>, import: false }.`,
+    `4. Session record (kept for the founder, not used for answers): Read ${recordPath} and send it with ${p}analify_call_write_tool, tool_name "analify_brain_files_post", arguments { filename: "${path.basename(recordPath)}", text: <the file's content as written — don't summarise it>, import: false }. The plugin already removed emails, phone numbers, card numbers and keys from it; if you still see a customer's name, address or another private detail, remove that line before sending.`,
     `5. ${p}analify_brain_session_finish with sessionId "${sessionId}" and a two-line summary of the business outcome.`,
-    `Never send passwords, keys, customers' phone numbers, emails or addresses. If a save is refused, read the note, fix it once or skip it.`,
+    `Never send passwords, keys, or customers' names, phone numbers, emails or addresses. If a save is refused, read the note and fix it once; if it is still refused, tell the user exactly what was not saved.`,
   ]
   return steps.filter(Boolean).join('\n')
 }
@@ -132,7 +132,23 @@ function main() {
   const workSince = (state.workCalls || 0) - (state.workAtCheckpoint || 0)
   const savesSince = (state.saveCalls || 0) - (state.savesAtCheckpoint || 0)
   const since = state.checkpointAt || state.startedAt || Date.now()
+  // Only finished work in reports/ is offered to the client's Brain. Anything
+  // else in the folder (private notes, drafts) stays with the agency.
   const newFiles = [...new Set([...state.files.slice(state.filesAtCheckpoint || 0), ...changedFiles(client.root, since)])]
+    .filter(isReportFile)
+
+  // Saves Analify refused since the last checkpoint, with nothing accepted:
+  // say so once, so missing work isn't mistaken for saved work.
+  const failedSince = (state.failedSaves || 0) - (state.failedAtCheckpoint || 0)
+  if (failedSince > 0 && savesSince === 0 && !state.failureReported) {
+    state.failureReported = true
+    saveState(client.root, input.session_id, state)
+    emit({
+      decision: 'block',
+      reason: `${failedSince} save(s) to ${client.config.brand}'s Brain were refused (last reason: ${state.lastSaveError || 'unknown'}). Fix the cause once and retry; if it still fails, tell the user in plain words which findings, decisions or files were NOT saved.`,
+    })
+    return
+  }
 
   if (workSince < MIN_WORK_CALLS && newFiles.length === 0) return
   if (savesSince > 0) {
@@ -163,11 +179,18 @@ function main() {
   emit({ decision: 'block', reason })
 }
 
+export function isReportFile(rel) {
+  const parts = String(rel).split(/[\\/]/)
+  return parts[0] === 'reports' && parts.length > 1
+}
+
 function advance(state, input, client) {
   state.workAtCheckpoint = state.workCalls || 0
   state.savesAtCheckpoint = state.saveCalls || 0
   state.filesAtCheckpoint = state.files.length
   state.checkpointAt = Date.now()
+  state.failedAtCheckpoint = state.failedSaves || 0
+  state.failureReported = false
   saveState(client.root, input.session_id, state)
 }
 
