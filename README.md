@@ -10,6 +10,8 @@ With this plugin, every client brand gets its own folder in Claude Code, connect
 
 Open. Ask. Approve. Done.
 
+![Every platform and app your clients run, connected to the Analify Business Brain in Claude Code](./assets/analify-integrations.png)
+
 ## What changes for your agency
 
 - **No more tab-hopping.** One folder per client, connected to the client's Shopify, Meta, TikTok, Google Ads, Snapchat and couriers through one Analify connection.
@@ -44,6 +46,8 @@ Or from your shell:
 claude plugin marketplace add scalyax-ai/claude-plugin-performance-marketing-agency
 claude plugin install analify-agency@scalyax
 ```
+
+**Turn on auto-update once,** so every new version reaches you on its own: in Claude Code run `/plugin`, open **Marketplaces**, choose **scalyax**, then **Enable auto-update**. Claude Code leaves it off by default for marketplaces it doesn't run itself, and a plugin can't switch it on. For a whole team, your Claude organization owner can switch it on for everyone (see [Roll it out to your whole team](#roll-it-out-to-your-whole-team)).
 
 ## Onboard your agency
 
@@ -153,12 +157,15 @@ Privacy policy: https://analify.scalyax.ai/en/privacy · Terms: https://analify.
 
 ## Roll it out to your whole team
 
-An owner of your Claude organization can install it for everyone through managed settings:
+An owner of your Claude organization can install it for everyone, with auto-update on, through managed settings:
 
 ```json
 {
   "extraKnownMarketplaces": {
-    "scalyax": { "source": { "source": "github", "repo": "scalyax-ai/claude-plugin-performance-marketing-agency" } }
+    "scalyax": {
+      "source": { "source": "github", "repo": "scalyax-ai/claude-plugin-performance-marketing-agency" },
+      "autoUpdate": true
+    }
   },
   "enabledPlugins": { "analify-agency@scalyax": true }
 }
@@ -169,6 +176,7 @@ An owner of your Claude organization can install it for everyone through managed
 - `node --test tests/*.test.mjs` runs the hook tests.
 - `claude plugin validate . --strict` checks the plugin and the marketplace.
 - `claude --plugin-dir .` tries local changes.
+- Raise `version` in `.claude-plugin/plugin.json` on every release: auto-update only installs a new version when that number changes.
 
 ## Support
 
