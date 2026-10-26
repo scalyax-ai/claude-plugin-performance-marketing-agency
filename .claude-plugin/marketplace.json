@@ -10,7 +10,7 @@
     {
       "name": "analify-agency",
       "source": "./",
-      "description": "For performance marketing agencies: one folder and one Analify connection per client brand in Claude Code, a guard against mixing clients, and audits, findings and decisions saved to each client's Business Brain.",
+      "description": "One AI workspace for every ecommerce client your agency runs: guided onboarding, one folder and one live Analify connection per client (Shopify, Meta, TikTok, Google Ads, Snapchat), a guard against mixing clients, and work saved to each client's Business Brain.",
       "category": "productivity"
     }
   ],

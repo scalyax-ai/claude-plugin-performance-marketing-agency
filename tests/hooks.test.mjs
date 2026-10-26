@@ -216,7 +216,7 @@ test('import creates many client folders and status reports what is missing', ()
   assert.equal(status.length, 2)
   const two = status.find(s => s.name === 'Brand, Two')
   assert.equal(two.connection, 'analify-brand-two')
-  assert.ok(two.missing.some(m => /Shopify/.test(m)))
+  assert.ok(two.missing.some(m => /Claude not linked/.test(m)))
 })
 
 test('add-client outside an agency folder explains what to do', () => {
@@ -239,4 +239,37 @@ test('stop notices a report written by a shell command, not only by Write', () =
   assert.equal(out.decision, 'block')
   assert.match(out.reason, /reports\/shell-audit\.md/)
   assert.doesNotMatch(out.reason, /CLAUDE\.md/)
+})
+
+test('get_context records what the client has connected, and the next session plans around it', () => {
+  const { clientDir } = setup()
+  const ctxFixture = JSON.parse(fs.readFileSync(path.join(here, 'fixtures', 'post-get-context.json'), 'utf8'))
+  // Before the brand is confirmed, nothing is recorded.
+  assert.equal(run('track.mjs', { ...ctxFixture, session_id: 's1', cwd: clientDir }, clientDir), null)
+  run('track.mjs', sessionStartPost(clientDir), clientDir)
+  const out = run('track.mjs', { ...ctxFixture, session_id: 's1', cwd: clientDir }, clientDir)
+  const ctx = out.hookSpecificOutput.additionalContext
+  assert.match(ctx, /Shopify, Meta Ads \(2 accounts\), Snapchat Ads/)
+  assert.match(ctx, /TikTok Ads disconnected/)
+
+  const next = run('session-start.mjs', { session_id: 's2', cwd: clientDir }, clientDir).hookSpecificOutput.additionalContext
+  assert.match(next, /Connected for Analify Ads .*Meta Ads \(2 accounts\)/)
+
+  const status = JSON.parse(cli(['status', '--json'], path.dirname(path.dirname(clientDir))).out)[0]
+  assert.deepEqual(status.connected, ['Shopify', 'Meta Ads (2 accounts)', 'Snapchat Ads'])
+  assert.ok(status.missing.some(m => /TikTok Ads disconnected/.test(m)))
+})
+
+test('add-sites makes one client per website', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agency '))
+  cli(['init', '--name', 'Zeyad Agency'], root)
+  const r = cli(['add-sites', 'https://www.caliego.com/shop', 'shop.nike.eg,jokey-joy.myshopify.com', 'not a url'], root)
+  assert.match(r.out, /✓ Caliego/)
+  assert.match(r.out, /✓ Nike/)
+  assert.match(r.out, /✓ Jokey Joy/)
+  assert.match(r.out, /✗ not/)
+  const status = JSON.parse(cli(['status', '--json'], root).out)
+  assert.deepEqual(status.map(s => s.name).sort(), ['Caliego', 'Jokey Joy', 'Nike'])
+  assert.equal(status.find(s => s.name === 'Caliego').site, 'https://www.caliego.com/shop')
+  assert.ok(status[0].missing.some(m => /analify-agency:connect/.test(m)))
 })

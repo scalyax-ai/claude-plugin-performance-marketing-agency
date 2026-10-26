@@ -1,6 +1,6 @@
 ---
 name: agency-setup
-description: Turn the current folder into an Analify agency workspace that holds one folder per client brand. Run once, in the folder where all client folders should live.
+description: Only create the agency folder (no clients). For the full guided setup use /analify-agency:onboard instead.
 argument-hint: "[agency name]"
 disable-model-invocation: true
 allowed-tools: Bash(node *)

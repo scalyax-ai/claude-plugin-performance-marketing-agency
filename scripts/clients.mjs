@@ -5,8 +5,10 @@
 //   node clients.mjs add    "<Client name>" [--brand "<Analify Brand>"] [--slug x]
 //                           [--site url] [--shopify store.myshopify.com] [--meta act_123]
 //                           [--autosave on|off]
+//   node clients.mjs add-sites <url> [<url> ...]   (one client per website)
 //   node clients.mjs import <file.csv>      (columns: name,brand,site,shopify,meta)
 //   node clients.mjs status [--json]
+//   node clients.mjs open [agency|signup]    (opens Analify in the browser)
 
 import fs from 'node:fs'
 import path from 'node:path'
@@ -21,6 +23,9 @@ import {
   readJsonFile,
   writeJsonFile,
   slugify,
+  nameFromSite,
+  connectedPlatforms,
+  platformGaps,
 } from './lib.mjs'
 
 export function listClients(agency) {
@@ -156,9 +161,9 @@ export function parseCsv(text) {
 export function clientStatus(client) {
   const c = client.config
   const missing = []
-  if (!c.bound) missing.push('Claude not linked yet (open the folder in Claude Code and sign in)')
-  if (!c.shopify) missing.push('Shopify store not recorded')
-  if (!c.meta) missing.push('Meta ad account not recorded')
+  if (!c.bound) missing.push('Claude not linked yet: open the folder in Claude Code and run /analify-agency:connect')
+  if (c.platforms) missing.push(...platformGaps(c.platforms))
+  else if (c.bound) missing.push('connected platforms not checked yet: run /analify-agency:connect in the folder')
   let lastSave = null
   try {
     const files = fs.readdirSync(path.join(client.root, '.analify', 'sessions')).sort()
@@ -167,13 +172,25 @@ export function clientStatus(client) {
   return {
     name: c.name,
     brand: c.brand,
+    site: c.site,
     folder: client.root,
     connection: c.serverName,
     linkedBrand: c.bound ? c.bound.name : null,
+    connected: c.platforms ? connectedPlatforms(c.platforms) : null,
     autosave: c.autosave,
     lastSave,
     missing,
   }
+}
+
+/** Open a URL in the default browser; returns false when it can't. */
+export function openUrl(url) {
+  const [cmd, args] =
+    process.platform === 'darwin' ? ['open', [url]]
+    : process.platform === 'win32' ? ['cmd', ['/c', 'start', '', url]]
+    : ['xdg-open', [url]]
+  const r = spawnSync(cmd, args, { stdio: 'ignore', timeout: 10_000 })
+  return r.status === 0
 }
 
 function parseArgs(argv) {
@@ -199,9 +216,8 @@ function nextSteps(client) {
       ? `  (The claude command wasn't found, so the connection is in this folder's .mcp.json — approve it once when Claude Code asks.)`
       : null,
     `Next, for ${c.name}:`,
-    `  1. Analify: ${ANALIFY_APP_URL}/en/agency/clients → add "${c.brand}" (skip if it exists).`,
-    `  2. In that Brand: Settings → Integrations → connect Shopify${c.shopify ? ` (${c.shopify})` : ''} and Meta${c.meta ? ` (${c.meta})` : ''}.`,
-    `  3. Open Claude Code in the client folder, run /mcp, choose ${c.serverName} → Authenticate, pick "${c.brand}" on the Analify screen and tick "Allow changes" (needed to save to the Brain; Claude still asks before changing ads or prices).`,
+    `  1. In Analify (${ANALIFY_APP_URL}/en/agency/clients), open or add "${c.brand}" and connect its store and ad accounts: Shopify, Meta, TikTok, Google Ads, Snapchat, plus couriers if you use them.`,
+    `  2. Open Claude Code in the client folder and run /analify-agency:connect. It signs Claude in to "${c.brand}" and reads what's connected.`,
   ]
     .filter(Boolean)
     .join('\n')
@@ -231,6 +247,28 @@ function main() {
     return
   }
 
+  if (cmd === 'add-sites') {
+    const sites = args._.flatMap(a => a.split(/[\s,]+/)).filter(Boolean)
+    if (!sites.length) { console.error('Usage: add-sites <website> [<website> ...]'); process.exit(1) }
+    for (const site of sites) {
+      const name = nameFromSite(site)
+      if (!name) { console.log(`✗ ${site}: not a website address`); continue }
+      try {
+        const client = addClient(agency, { name, site: /^https?:/i.test(site) ? site : `https://${site}`, autosave })
+        console.log(`✓ ${client.config.name} (${site}) → folder ${path.relative(agency.root, client.root)}, connection ${client.config.serverName}${client.updated ? ' (updated)' : ''}`)
+      } catch (e) {
+        console.log(`✗ ${site}: ${e.message}`)
+      }
+    }
+    return
+  }
+
+  if (cmd === 'open') {
+    const target = args._[0] === 'signup' ? `${ANALIFY_APP_URL}/en/signup` : `${ANALIFY_APP_URL}/en/agency/clients`
+    console.log(openUrl(target) ? `Opened ${target}` : `Open this in your browser: ${target}`)
+    return
+  }
+
   if (cmd === 'import') {
     const file = args._[0]
     if (!file) { console.error('Usage: import <file.csv>'); process.exit(1) }
@@ -246,7 +284,7 @@ function main() {
       }
     }
     console.log(`\n${ok} of ${rows.length} client folders ready in ${path.join(agency.root, agency.config.clientsDir || 'Clients')}.`)
-    console.log(`Next for each: create the Brand in ${ANALIFY_APP_URL}/en/agency/clients, connect Shopify and Meta in it, then open the folder in Claude Code and authenticate its connection in /mcp.`)
+    console.log(`Next for each: open or add the Brand in ${ANALIFY_APP_URL}/en/agency/clients and connect its accounts, then open the client's folder in Claude Code and run /analify-agency:connect.`)
     return
   }
 
@@ -257,13 +295,13 @@ function main() {
     const linked = rows.filter(r => r.linkedBrand).length
     console.log(`${agency.config.name}: ${rows.length} clients, ${linked} linked to Claude.\n`)
     for (const r of rows) {
-      console.log(`${r.missing.length ? '•' : '✓'} ${r.name}  [${r.connection}]  linked: ${r.linkedBrand || 'no'} · autosave ${r.autosave ? 'on' : 'off'} · last autosave checkpoint ${r.lastSave || 'none yet'}`)
+      console.log(`${r.missing.length ? '•' : '✓'} ${r.name}  [${r.connection}]  linked: ${r.linkedBrand || 'no'} · connected: ${r.connected ? r.connected.join(', ') || 'nothing' : 'not checked'} · autosave ${r.autosave ? 'on' : 'off'} · last autosave checkpoint ${r.lastSave || 'none yet'}`)
       for (const m of r.missing) console.log(`    - ${m}`)
     }
     return
   }
 
-  console.error('Commands: init | add | import | status')
+  console.error('Commands: init | add | add-sites | import | status | open')
   process.exit(1)
 }
 

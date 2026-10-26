@@ -14,6 +14,9 @@ import {
   saveState,
   splitMcpName,
   findOrganization,
+  summarizeIntegrations,
+  connectedPlatforms,
+  platformGaps,
   normalizeName,
   emit,
   BRAIN_SAVE_TOOLS,
@@ -50,6 +53,17 @@ if (name && name.server === config.serverName) {
       } else {
         context = `WRONG BRAND: this connection is signed in to "${org.name}", but this folder is for ${config.name} (expected "${config.bound ? config.bound.name : config.brand}"). Analify tools are blocked here. Tell the user exactly this and how to fix it: run /mcp, pick ${config.serverName}, clear authentication, sign in again and choose the right Brand.`
       }
+    }
+  } else if (name.tool === 'analify_get_context') {
+    const platforms = summarizeIntegrations(input.tool_response)
+    if (platforms && state.bound && !state.bound.mismatch) {
+      config.platforms = platforms
+      config.platformsCheckedAt = new Date().toISOString().slice(0, 10)
+      saveClientConfig(client)
+      const on = connectedPlatforms(platforms)
+      const gaps = platformGaps(platforms)
+      context = `${config.name} has connected in Analify: ${on.length ? on.join(', ') : 'nothing yet'}.` +
+        (gaps.length ? ` Still missing: ${gaps.join('; ')}. Work only with what is connected and say plainly what a missing platform means for the answer.` : '')
     }
   } else if (BRAIN_SAVE_TOOLS.has(name.tool)) {
     state.saveCalls += 1

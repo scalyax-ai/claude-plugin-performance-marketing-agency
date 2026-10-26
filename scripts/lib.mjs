@@ -188,3 +188,94 @@ export function findOrganization(value, depth = 0) {
 export function today() {
   return new Date().toISOString().slice(0, 10)
 }
+
+const PLATFORM_NAMES = {
+  shopify: 'Shopify',
+  meta_ads: 'Meta Ads',
+  tiktok_ads: 'TikTok Ads',
+  google_ads: 'Google Ads',
+  snapchat_ads: 'Snapchat Ads',
+  google_analytics: 'Google Analytics',
+  google_sheets: 'Google Sheets',
+  bosta: 'Bosta',
+  bosta_fulfillment: 'Bosta Fulfillment',
+  odoo: 'Odoo',
+}
+
+export function platformName(key) {
+  return PLATFORM_NAMES[key] || String(key).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
+export const AD_PLATFORMS = ['meta_ads', 'tiktok_ads', 'google_ads', 'snapchat_ads']
+
+/**
+ * The `integrations` list from an analify_get_context response, summarised per
+ * platform: { meta_ads: { connected: 2, disconnected: 1, accounts: [...] } }.
+ */
+export function summarizeIntegrations(value, depth = 0) {
+  if (value == null || depth > 6) return null
+  if (typeof value === 'string') {
+    const parsed = parseJson(value)
+    return parsed && typeof parsed === 'object' ? summarizeIntegrations(parsed, depth + 1) : null
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = summarizeIntegrations(item, depth + 1)
+      if (found) return found
+    }
+    return null
+  }
+  if (typeof value === 'object') {
+    if (Array.isArray(value.integrations)) {
+      const out = {}
+      for (const i of value.integrations) {
+        if (!i || typeof i.platform !== 'string') continue
+        const p = (out[i.platform] = out[i.platform] || { connected: 0, disconnected: 0, accounts: [] })
+        if (i.status === 'connected') {
+          p.connected += 1
+          if (i.account_name && p.accounts.length < 5) p.accounts.push(String(i.account_name))
+        } else p.disconnected += 1
+      }
+      return out
+    }
+    for (const key of Object.keys(value)) {
+      const found = summarizeIntegrations(value[key], depth + 1)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+/** "Shopify, Meta Ads (2 accounts)" for connected platforms; [] when none. */
+export function connectedPlatforms(platforms) {
+  return Object.entries(platforms || {})
+    .filter(([, p]) => p.connected > 0)
+    .map(([key, p]) => (p.connected > 1 ? `${platformName(key)} (${p.connected} accounts)` : platformName(key)))
+}
+
+/** What a client still needs before Analify can answer its business questions. */
+export function platformGaps(platforms) {
+  const on = key => (platforms?.[key]?.connected || 0) > 0
+  const gaps = []
+  if (!on('shopify')) gaps.push('Shopify not connected in Analify')
+  if (!AD_PLATFORMS.some(on)) gaps.push('no ad platform connected in Analify (Meta, TikTok, Google or Snapchat)')
+  for (const [key, p] of Object.entries(platforms || {})) {
+    if (p.connected === 0 && p.disconnected > 0) gaps.push(`${platformName(key)} disconnected, reconnect it in Analify`)
+  }
+  return gaps
+}
+
+/** Brand name guessed from a website: "https://www.caliego.com/shop" -> "Caliego". */
+export function nameFromSite(site) {
+  let host = String(site || '').trim()
+  try {
+    host = new URL(/^https?:\/\//i.test(host) ? host : `https://${host}`).hostname
+  } catch {
+    return ''
+  }
+  if (!host.includes('.')) return ''
+  const parts = host.replace(/^www\./i, '').split('.')
+  const base = parts[0] === 'shop' || parts[0] === 'store' ? parts[1] || parts[0] : parts[0]
+  const label = base.replace(/[-_]+/g, ' ').trim()
+  return label.replace(/\b\w/g, c => c.toUpperCase())
+}

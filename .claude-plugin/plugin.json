@@ -1,8 +1,8 @@
 {
   "name": "analify-agency",
   "displayName": "Analify for Performance Marketing Agencies",
-  "version": "2.0.0",
-  "description": "For performance marketing agencies running many ecommerce brands: every client gets its own folder and its own live Analify connection in Claude Code, a guard stops one client's data reaching another's work, and audits, findings and decisions are saved to that client's Business Brain.",
+  "version": "2.1.0",
+  "description": "One AI workspace for every ecommerce client your performance marketing agency runs, inside Claude Code. Guided onboarding gives each client brand its own folder and live Analify connection to Shopify, Meta, TikTok, Google Ads, Snapchat and couriers; a guard keeps clients apart, and audits, findings and decisions are saved to each client's Business Brain.",
   "author": {
     "name": "Scalyax",
     "email": "analify@scalyax.ai",
@@ -16,8 +16,10 @@
     "performance-marketing",
     "ecommerce",
     "meta-ads",
-    "shopify",
     "tiktok-ads",
+    "google-ads",
+    "snapchat-ads",
+    "shopify",
     "business-brain",
     "multi-client"
   ],
