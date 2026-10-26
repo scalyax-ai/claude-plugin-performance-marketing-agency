@@ -13,7 +13,7 @@ Walk the agency through this one step at a time. Short messages, plain words, on
 ## Step 1 — The agency
 If `$ARGUMENTS` is empty, ask: "What's your agency called?" Then run:
 `node "${CLAUDE_PLUGIN_ROOT}/scripts/clients.mjs" init --name "<agency name>"`
-Tell them this folder now holds all their clients, one folder each.
+Tell them this folder now holds all their clients, one folder each. Then ask them to turn on auto-update once, so new versions of this plugin reach them on their own: `/plugin` → **Marketplaces** → **scalyax** → **Enable auto-update** (a plugin can't switch this on itself; an organization owner can switch it on for the whole team, see the README).
 
 ## Step 2 — The clients
 Ask: "Paste your clients' website addresses, one per line (or the path to a CSV with columns name,brand,site,shopify,meta)."
