@@ -1,0 +1,17 @@
+{
+  "name": "scalyax",
+  "description": "Scalyax plugins for Claude Code: Analify, the AI Business Brain and Ecommerce Operator.",
+  "owner": {
+    "name": "Scalyax",
+    "email": "analify@scalyax.ai",
+    "url": "https://analify.scalyax.ai"
+  },
+  "plugins": [
+    {
+      "name": "analify",
+      "source": "./",
+      "description": "Ask what your store actually made, with live Shopify, Meta, TikTok and Bosta data. Agency mode: one folder and one Analify connection per client, with research, audits and decisions saved to each client's Brain.",
+      "category": "productivity"
+    }
+  ]
+}

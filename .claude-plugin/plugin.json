@@ -1,8 +1,8 @@
 {
   "name": "analify",
   "displayName": "Analify",
-  "version": "1.0.0",
-  "description": "Ask what your ecommerce store actually made. Analify connects Shopify, Meta Ads, TikTok Ads and Bosta and answers with Blended Profit (revenue minus ad spend, shipping, COGS and returns). Reads by default; changes only after you approve.",
+  "version": "1.1.0",
+  "description": "Ask what your ecommerce store actually made. Analify connects Shopify, Meta Ads, TikTok Ads and Bosta and answers with Blended Profit (revenue minus ad spend, shipping, COGS and returns). Agencies get one folder per client brand, each with its own Analify connection, a guard against mixing clients, and research, audits and decisions saved to that client's Brain.",
   "author": {
     "name": "Scalyax",
     "email": "analify@scalyax.ai",
@@ -11,7 +11,16 @@
   "homepage": "https://analify-ai.readme.io/docs/mcp",
   "repository": "https://github.com/scalyax-ai/analify-claude-plugin",
   "license": "MIT",
-  "keywords": ["ecommerce", "shopify", "meta-ads", "tiktok-ads", "profit", "analytics"],
+  "keywords": [
+    "ecommerce",
+    "shopify",
+    "meta-ads",
+    "tiktok-ads",
+    "profit",
+    "analytics",
+    "agency",
+    "business-brain"
+  ],
   "icon": "./icon.png",
   "documentationUrl": "https://analify-ai.readme.io/docs/mcp",
   "supportUrl": "https://analify.scalyax.ai/en/contact",
