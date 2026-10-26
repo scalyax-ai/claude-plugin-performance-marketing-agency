@@ -1,0 +1,11 @@
+{
+ "hook_event_name": "PostToolUse",
+ "tool_name": "mcp__analify-analify-ads__analify_get_context",
+ "tool_input": {},
+ "tool_response": [
+  {
+   "type": "text",
+   "text": "{\"catalogs\": [], \"integrations\": [{\"platform\": \"shopify\", \"status\": \"connected\", \"account_name\": \"Analify Ads Store\"}, {\"platform\": \"meta_ads\", \"status\": \"connected\", \"account_name\": \"Analify AI\"}, {\"platform\": \"meta_ads\", \"status\": \"connected\", \"account_name\": \"Analify AI 2\"}, {\"platform\": \"tiktok_ads\", \"status\": \"disconnected\", \"account_name\": \"Old TikTok\"}, {\"platform\": \"snapchat_ads\", \"status\": \"connected\", \"account_name\": \"Snap\"}]}"
+  }
+ ]
+}

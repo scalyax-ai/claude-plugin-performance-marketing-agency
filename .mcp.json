@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "analify": {
-      "type": "http",
-      "url": "https://analify-mcp.scalyax.ai/"
-    }
-  }
-}
