@@ -28,7 +28,7 @@ if (client) {
     `Then read what this Brand already knows with analify_brain_search (via ${prefix}analify_call_tool) before answering business questions. Tell every number which client it belongs to.`,
     config.autosave
       ? `Brain autosave is ON for this client: the agency owner turned it on for this folder, so saving this client's research, findings, audits and decisions to ${config.brand}'s Brain is approved. When a save checkpoint arrives, follow its steps. Never save anything about another business here.`
-      : `Brain autosave is OFF for this client. Save to the Brain only when the user asks (/analify:save).`,
+      : `Brain autosave is OFF for this client. Save to the Brain only when the user asks (/analify-agency:save).`,
     `Today is ${today()}.`,
   ]
   emit({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: lines.join('\n') } })
@@ -42,7 +42,7 @@ if (agency) {
   const lines = [
     `ANALIFY AGENCY ROOT — ${agency.config.name || 'agency'}. ${clients.length} client folder(s), ${linked} with a confirmed Analify connection.`,
     `Client work happens inside each client's folder (open Claude Code there), never here: this root has no client connection.`,
-    `Commands: /analify:add-client, /analify:import-clients, /analify:clients.`,
+    `Commands: /analify-agency:add-client, /analify-agency:import-clients, /analify-agency:clients.`,
   ]
   emit({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: lines.join('\n') } })
 }

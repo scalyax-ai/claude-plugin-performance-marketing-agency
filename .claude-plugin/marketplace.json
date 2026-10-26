@@ -8,10 +8,13 @@
   },
   "plugins": [
     {
-      "name": "analify",
+      "name": "analify-agency",
       "source": "./",
-      "description": "Ask what your store actually made, with live Shopify, Meta, TikTok and Bosta data. Agency mode: one folder and one Analify connection per client, with research, audits and decisions saved to each client's Brain.",
+      "description": "For performance marketing agencies: one folder and one Analify connection per client brand in Claude Code, a guard against mixing clients, and audits, findings and decisions saved to each client's Business Brain.",
       "category": "productivity"
     }
-  ]
+  ],
+  "renames": {
+    "analify": "analify-agency"
+  }
 }

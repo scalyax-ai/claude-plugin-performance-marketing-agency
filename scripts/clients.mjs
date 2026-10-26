@@ -1,5 +1,5 @@
 // Agency client folders: create the agency root, add or import clients, show
-// setup status. Run by the /analify:* skills; never touches the network.
+// setup status. Run by the /analify-agency:* skills; never touches the network.
 //
 //   node clients.mjs init   [--name "Agency name"]
 //   node clients.mjs add    "<Client name>" [--brand "<Analify Brand>"] [--slug x]
@@ -102,8 +102,9 @@ export function addClient(agency, opts) {
  * Preferred: Claude Code's local scope (`claude mcp add --scope local`), which
  * is tied to the folder on this machine and needs no approval prompt. Claude
  * Code keeps one sign-in per connection name, so every client has its own name.
- * Fallback when the `claude` command isn't on PATH: a project .mcp.json plus a
- * local approval, which Claude Code asks to confirm once when the folder opens.
+ * Fallback when the `claude` command isn't on PATH: a project .mcp.json, which
+ * Claude Code asks the user to approve once when the folder opens. The plugin
+ * never writes Claude Code permission settings itself.
  */
 function registerConnection(root, serverName) {
   if (!process.env.ANALIFY_NO_CLAUDE_CLI) {
@@ -122,10 +123,6 @@ function registerConnection(root, serverName) {
   }
   mcp.mcpServers[serverName] = { type: 'http', url: ANALIFY_MCP_URL }
   writeJsonFile(mcpPath, mcp)
-  const localSettingsPath = path.join(root, '.claude', 'settings.local.json')
-  const local = readJsonFile(localSettingsPath, {})
-  local.enabledMcpjsonServers = [...new Set([...(local.enabledMcpjsonServers || []), serverName])]
-  writeJsonFile(localSettingsPath, local)
   return 'project'
 }
 
@@ -224,7 +221,7 @@ function main() {
 
   const agency = findAgency(cwd)
   if (!agency) {
-    console.error('Not inside an agency folder. Run /analify:agency-setup in the folder that should hold all clients first.')
+    console.error('Not inside an agency folder. Run /analify-agency:agency-setup in the folder that should hold all clients first.')
     process.exit(1)
   }
 
@@ -256,7 +253,7 @@ function main() {
   if (cmd === 'status') {
     const rows = listClients(agency).map(clientStatus)
     if (args.json) { console.log(JSON.stringify(rows, null, 2)); return }
-    if (!rows.length) { console.log('No clients yet. Add one with /analify:add-client.'); return }
+    if (!rows.length) { console.log('No clients yet. Add one with /analify-agency:add-client.'); return }
     const linked = rows.filter(r => r.linkedBrand).length
     console.log(`${agency.config.name}: ${rows.length} clients, ${linked} linked to Claude.\n`)
     for (const r of rows) {

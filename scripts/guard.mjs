@@ -52,7 +52,7 @@ if (!bound) {
 }
 if (bound.mismatch) {
   deny(
-    `Blocked: this connection is signed in to "${bound.name}", but this folder is for ${config.name} (Brand "${config.brand}"). Ask the user to reconnect: /mcp → ${own} → clear authentication, sign in again and choose "${config.brand}". If "${bound.name}" really is this client's Brand, run /analify:add-client "${config.name}" --brand "${bound.name}" to correct the folder, then call analify_brain_session_start again.`
+    `Blocked: this connection is signed in to "${bound.name}", but this folder is for ${config.name} (Brand "${config.brand}"). Ask the user to reconnect: /mcp → ${own} → clear authentication, sign in again and choose "${config.brand}". If "${bound.name}" really is this client's Brand, run /analify-agency:add-client "${config.name}" --brand "${bound.name}" to correct the folder, then call analify_brain_session_start again.`
   )
 }
 

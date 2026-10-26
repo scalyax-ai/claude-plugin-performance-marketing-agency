@@ -13,6 +13,6 @@ allowed-tools: Bash(node *)
    (If no agency name was given, drop `--name` and ask the user for it afterwards only if it matters.)
 2. Tell the user, in plain words:
    - Each client gets its own folder under `Clients/`, with its own Analify connection. Claude opened in a client's folder only sees that client.
-   - Next: add clients one by one with `/analify:add-client "Client name"`, or all at once with `/analify:import-clients clients.csv` (columns: name, brand, site, shopify, meta).
+   - Next: add clients one by one with `/analify-agency:add-client "Client name"`, or all at once with `/analify-agency:import-clients clients.csv` (columns: name, brand, site, shopify, meta).
    - Brain autosave is on by default for every client: research, audits and decisions made in a client's folder are saved to that client's own Analify Brain. It can be turned off per client with `--autosave off`.
 3. Check `node --version` works (Node 18 or newer). The hooks need it; if it is missing, tell the user to install Node.js from nodejs.org.

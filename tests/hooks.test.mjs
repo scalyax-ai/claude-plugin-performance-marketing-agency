@@ -57,13 +57,12 @@ const sessionStartPost = (cwd, sid = 's1') => ({
 const pre = (cwd, tool, extra = {}) => ({ hook_event_name: 'PreToolUse', session_id: 's1', cwd, tool_name: tool, tool_input: {}, ...extra })
 const post = (cwd, tool, tool_input = {}) => ({ hook_event_name: 'PostToolUse', session_id: 's1', cwd, tool_name: tool, tool_input, tool_response: [] })
 
-test('add-client writes the folder, its own connection and local approval', () => {
+test('add-client writes the folder and its own connection, without touching permission settings', () => {
   const { clientDir } = setup()
   const mcp = JSON.parse(fs.readFileSync(path.join(clientDir, '.mcp.json'), 'utf8'))
   assert.deepEqual(Object.keys(mcp.mcpServers), [SERVER])
   assert.equal(mcp.mcpServers[SERVER].url, 'https://analify-mcp.scalyax.ai/')
-  const local = JSON.parse(fs.readFileSync(path.join(clientDir, '.claude', 'settings.local.json'), 'utf8'))
-  assert.deepEqual(local.enabledMcpjsonServers, [SERVER])
+  assert.equal(fs.existsSync(path.join(clientDir, '.claude')), false)
   const cfg = JSON.parse(fs.readFileSync(path.join(clientDir, '.analify', 'client.json'), 'utf8'))
   assert.equal(cfg.agencyName, 'Zeyad Agency')
   assert.equal(cfg.autosave, true)

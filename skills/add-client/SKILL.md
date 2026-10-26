@@ -8,7 +8,7 @@ allowed-tools: Bash(node *)
 
 # Add a client
 
-1. Run, from the agency folder (where `/analify:agency-setup` was run):
+1. Run, from the agency folder (where `/analify-agency:agency-setup` was run):
    `node "${CLAUDE_PLUGIN_ROOT}/scripts/clients.mjs" add $ARGUMENTS`
    Quote a client name with spaces. If the script says the folder id can't be made (for example an Arabic-only name), rerun with `--slug <latin-name>`.
 2. Show the user the "Next" steps the script printed, as a short numbered list. Keep the exact Brand name and connection name.

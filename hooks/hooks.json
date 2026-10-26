@@ -1,5 +1,5 @@
 {
-  "description": "Analify agency mode: one Analify connection per client folder, a guard against using another business's connection, and Brain autosave checkpoints. Every hook does nothing outside folders created by /analify:agency-setup and /analify:add-client, and none of them makes network calls.",
+  "description": "Analify for agencies: one Analify connection per client folder, a guard against using another client's connection, and Brain autosave checkpoints. Every hook does nothing outside folders created by /analify-agency:agency-setup and /analify-agency:add-client, and none of them makes network calls.",
   "hooks": {
     "SessionStart": [
       {
