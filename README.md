@@ -35,13 +35,13 @@ Keep your Claude. Give it every client, one at a time.
 In Claude Code:
 
 ```
-/plugin install analify-agency --marketplace scalyax-ai/analify-claude-plugin
+/plugin install analify-agency --marketplace scalyax-ai/claude-plugin-performance-marketing-agency
 ```
 
 Or from your shell:
 
 ```bash
-claude plugin marketplace add scalyax-ai/analify-claude-plugin
+claude plugin marketplace add scalyax-ai/claude-plugin-performance-marketing-agency
 claude plugin install analify-agency@scalyax
 ```
 
@@ -111,7 +111,7 @@ An owner of your Claude organization can install it for everyone through managed
 ```json
 {
   "extraKnownMarketplaces": {
-    "scalyax": { "source": { "source": "github", "repo": "scalyax-ai/analify-claude-plugin" } }
+    "scalyax": { "source": { "source": "github", "repo": "scalyax-ai/claude-plugin-performance-marketing-agency" } }
   },
   "enabledPlugins": { "analify-agency@scalyax": true }
 }
