@@ -14,6 +14,6 @@ Only in a client folder (the session context says ANALIFY AGENCY WORKSPACE and n
 2. **See what's connected.** Call `analify_get_context`. The plugin records it for this client.
 3. **Report in plain words:**
    - "Connected: …" (platforms and how many ad accounts).
-   - "Missing: …" with what each gap means, for example "No Shopify, so I can't see orders or real profit yet" or "Meta disconnected, reconnect it in Analify".
+   - "Missing: …" with what each gap means, for example "No store connected, so I can't see orders or real profit yet" or "Meta disconnected, reconnect it in Analify".
    - What Claude can do now for this client with what is connected (2–3 concrete examples, such as a Meta and TikTok spend check or yesterday's real profit).
 4. If anything is missing, give the Analify link (https://analify.scalyax.ai/en/agency/clients → this brand → Settings → Integrations) and suggest running `/analify-agency:connect` again after connecting.

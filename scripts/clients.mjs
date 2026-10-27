@@ -6,6 +6,7 @@
 //                           [--site url] [--shopify store.myshopify.com] [--meta act_123]
 //                           [--autosave on|off]
 //   node clients.mjs add-sites <url> [<url> ...]   (one client per website)
+//   node clients.mjs rename "<name or website>" "<new name>" [--brand "<Analify brand>"]
 //   node clients.mjs import <file.csv>      (columns: name,brand,site,shopify,meta)
 //   node clients.mjs status [--json]
 //   node clients.mjs open [agency|signup]    (opens Analify in the browser)
@@ -68,6 +69,10 @@ export function addClient(agency, opts) {
   const root = path.join(clientsDir, name.replace(/[/\\:*?"<>|]/g, '-'))
   const configPath = path.join(root, CLIENT_FILE)
   const previous = readJsonFile(configPath)
+  // Same name, different website: that's another business, not an update.
+  if (previous?.site && opts.site && siteKey(previous.site) !== siteKey(opts.site) && !opts.updateSite) {
+    throw new Error(`"${name}" already exists for ${previous.site}. Give this one a different name, or pass --update-site to change ${name}'s website.`)
+  }
   const brand = String(opts.brand || previous?.brand || name).trim()
   const config = {
     name,
@@ -99,6 +104,59 @@ export function addClient(agency, opts) {
     )
   }
   return { root, config, connection, updated: Boolean(previous) }
+}
+
+/** "https://www.Nour.com/shop" -> "nour.com": how two websites are compared. */
+export function siteKey(site) {
+  try {
+    const url = new URL(/^https?:\/\//i.test(site) ? site : `https://${site}`)
+    return url.hostname.toLowerCase().replace(/^www\./, '')
+  } catch {
+    return String(site || '').toLowerCase()
+  }
+}
+
+/** A client name for a website that doesn't clash with another client's. */
+export function uniqueSiteName(agency, site) {
+  const base = nameFromSite(site)
+  if (!base) return ''
+  const taken = new Map(listClients(agency).map(c => [c.config.name.toLowerCase(), c.config]))
+  const clash = n => {
+    const other = taken.get(n.toLowerCase())
+    return other && !(other.site && siteKey(other.site) === siteKey(site))
+  }
+  if (!clash(base)) return base
+  const tld = siteKey(site).split('.').slice(1).join('.').toUpperCase()
+  if (tld && !clash(`${base} ${tld}`)) return `${base} ${tld}`
+  for (let i = 2; ; i++) if (!clash(`${base} ${i}`)) return `${base} ${i}`
+}
+
+/**
+ * Rename a client: moves its folder and updates its name, keeping its
+ * connection name, so the Analify sign-in carries over.
+ */
+export function renameClient(agency, from, to) {
+  const newName = String(to || '').trim()
+  if (!newName) throw new Error('New name is required.')
+  const key = String(from || '').toLowerCase()
+  const client = listClients(agency).find(
+    c => c.config.name.toLowerCase() === key || c.config.slug === key || (c.config.site && siteKey(c.config.site) === siteKey(from))
+  )
+  if (!client) throw new Error(`No client called "${from}".`)
+  if (listClients(agency).some(c => c !== client && c.config.name.toLowerCase() === newName.toLowerCase())) {
+    throw new Error(`Another client is already called "${newName}".`)
+  }
+  const newRoot = path.join(path.dirname(client.root), newName.replace(/[/\\:*?"<>|]/g, '-'))
+  if (newRoot !== client.root) {
+    if (fs.existsSync(newRoot)) throw new Error(`A folder named "${path.basename(newRoot)}" already exists.`)
+    fs.renameSync(client.root, newRoot)
+  }
+  const config = { ...client.config, name: newName }
+  if (client.config.brand === client.config.name) config.brand = newName
+  if (config.brand !== client.config.brand) config.bound = null
+  writeJsonFile(path.join(newRoot, CLIENT_FILE), config)
+  const connection = registerConnection(newRoot, config.serverName)
+  return { root: newRoot, config, connection, from: client.config.name }
 }
 
 /**
@@ -164,11 +222,8 @@ export function clientStatus(client) {
   if (!c.bound) missing.push('Claude not linked yet: open the folder in Claude Code and run /analify-agency:connect')
   if (c.platforms) missing.push(...platformGaps(c.platforms))
   else if (c.bound) missing.push('connected platforms not checked yet: run /analify-agency:connect in the folder')
-  let lastSave = null
-  try {
-    const files = fs.readdirSync(path.join(client.root, '.analify', 'sessions')).sort()
-    if (files.length) lastSave = files[files.length - 1].slice(0, 10)
-  } catch {}
+  // The last save Analify accepted (recorded from its answer), not a local file date.
+  const lastSave = c.lastSavedAt || null
   return {
     name: c.name,
     brand: c.brand,
@@ -242,7 +297,7 @@ function main() {
   }
 
   if (cmd === 'add') {
-    const client = addClient(agency, { name: args._.join(' '), brand: args.brand, slug: args.slug, site: args.site, shopify: args.shopify, meta: args.meta, autosave })
+    const client = addClient(agency, { name: args._.join(' '), brand: args.brand, slug: args.slug, site: args.site, shopify: args.shopify, meta: args.meta, autosave, updateSite: Boolean(args['update-site']) })
     console.log(nextSteps(client))
     return
   }
@@ -251,7 +306,7 @@ function main() {
     const sites = args._.flatMap(a => a.split(/[\s,]+/)).filter(Boolean)
     if (!sites.length) { console.error('Usage: add-sites <website> [<website> ...]'); process.exit(1) }
     for (const site of sites) {
-      const name = nameFromSite(site)
+      const name = uniqueSiteName(agency, site)
       if (!name) { console.log(`✗ ${site}: not a website address`); continue }
       try {
         const client = addClient(agency, { name, site: /^https?:/i.test(site) ? site : `https://${site}`, autosave })
@@ -260,6 +315,15 @@ function main() {
         console.log(`✗ ${site}: ${e.message}`)
       }
     }
+    return
+  }
+
+  if (cmd === 'rename') {
+    const [from, to] = args._
+    if (!from || !to) { console.error('Usage: rename "<current name or website>" "<new name>" [--brand "<Analify brand>"]'); process.exit(1) }
+    const r = renameClient(agency, from, to)
+    if (typeof args.brand === 'string') addClient(agency, { name: r.config.name, brand: args.brand, slug: r.config.slug })
+    console.log(`✓ ${r.from} → ${r.config.name} (folder ${path.relative(agency.root, r.root)}, connection ${r.config.serverName} kept)`)
     return
   }
 
@@ -295,13 +359,13 @@ function main() {
     const linked = rows.filter(r => r.linkedBrand).length
     console.log(`${agency.config.name}: ${rows.length} clients, ${linked} linked to Claude.\n`)
     for (const r of rows) {
-      console.log(`${r.missing.length ? '•' : '✓'} ${r.name}  [${r.connection}]  linked: ${r.linkedBrand || 'no'} · connected: ${r.connected ? r.connected.join(', ') || 'nothing' : 'not checked'} · autosave ${r.autosave ? 'on' : 'off'} · last autosave checkpoint ${r.lastSave || 'none yet'}`)
+      console.log(`${r.missing.length ? '•' : '✓'} ${r.name}  [${r.connection}]  linked: ${r.linkedBrand || 'no'} · connected: ${r.connected ? r.connected.join(', ') || 'nothing' : 'not checked'} · autosave ${r.autosave ? 'on' : 'off'} · last confirmed save ${r.lastSave || 'none yet'}`)
       for (const m of r.missing) console.log(`    - ${m}`)
     }
     return
   }
 
-  console.error('Commands: init | add | add-sites | import | status | open')
+  console.error('Commands: init | add | add-sites | rename | import | status | open')
   process.exit(1)
 }
 

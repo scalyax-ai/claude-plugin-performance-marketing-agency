@@ -200,6 +200,10 @@ const PLATFORM_NAMES = {
   bosta: 'Bosta',
   bosta_fulfillment: 'Bosta Fulfillment',
   odoo: 'Odoo',
+  woocommerce: 'WooCommerce',
+  salla: 'Salla',
+  easyorders: 'EasyOrders',
+  amazon: 'Amazon',
 }
 
 export function platformName(key) {
@@ -207,6 +211,7 @@ export function platformName(key) {
 }
 
 export const AD_PLATFORMS = ['meta_ads', 'tiktok_ads', 'google_ads', 'snapchat_ads']
+export const STORE_PLATFORMS = ['shopify', 'woocommerce', 'salla', 'easyorders', 'amazon']
 
 /**
  * The `integrations` list from an analify_get_context response, summarised per
@@ -230,11 +235,14 @@ export function summarizeIntegrations(value, depth = 0) {
       const out = {}
       for (const i of value.integrations) {
         if (!i || typeof i.platform !== 'string') continue
-        const p = (out[i.platform] = out[i.platform] || { connected: 0, disconnected: 0, accounts: [] })
+        const p = (out[i.platform] = out[i.platform] || { connected: 0, disconnected: 0, accounts: [], offAccounts: [] })
         if (i.status === 'connected') {
           p.connected += 1
           if (i.account_name && p.accounts.length < 5) p.accounts.push(String(i.account_name))
-        } else p.disconnected += 1
+        } else {
+          p.disconnected += 1
+          if (i.account_name && p.offAccounts.length < 5) p.offAccounts.push(String(i.account_name))
+        }
       }
       return out
     }
@@ -257,12 +265,87 @@ export function connectedPlatforms(platforms) {
 export function platformGaps(platforms) {
   const on = key => (platforms?.[key]?.connected || 0) > 0
   const gaps = []
-  if (!on('shopify')) gaps.push('Shopify not connected in Analify')
+  if (!STORE_PLATFORMS.some(on)) gaps.push('no store connected in Analify (Shopify, WooCommerce, Salla, EasyOrders or Amazon), so no orders or real profit yet')
   if (!AD_PLATFORMS.some(on)) gaps.push('no ad platform connected in Analify (Meta, TikTok, Google or Snapchat)')
   for (const [key, p] of Object.entries(platforms || {})) {
-    if (p.connected === 0 && p.disconnected > 0) gaps.push(`${platformName(key)} disconnected, reconnect it in Analify`)
+    if (!p.disconnected) continue
+    const names = p.offAccounts?.length ? ` (${p.offAccounts.join(', ')})` : ''
+    if (p.connected === 0) gaps.push(`${platformName(key)} disconnected${names}: reconnect it in Analify`)
+    else gaps.push(`${p.disconnected} of ${p.connected + p.disconnected} ${platformName(key)} accounts disconnected${names}: if any still runs, its numbers are missing from totals; reconnect it or remove it in Analify`)
   }
   return gaps
+}
+
+// Patterns removed from session records before they can leave the machine.
+// A safety net, not a guarantee: names and street addresses aren't detectable.
+const REDACTIONS = [
+  [/-----BEGIN [A-Z ]+-----[\s\S]*?-----END [A-Z ]+-----/g, '[private key removed]'],
+  [/\b(?:sk|pk|rk|ghp|gho|github_pat|xox[abpr]|AKIA|AIza|ya29|shpat|shpca|shpss|EAA)[A-Za-z0-9_\-.]{12,}/g, '[key removed]'],
+  [/\b(?:bearer|token|api[_-]?key|secret|password|passwd|pwd)\b\s*[:=]\s*\S+/gi, '[secret removed]'],
+  [/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g, '[token removed]'],
+  [/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, '[email removed]'],
+  // International (+20 100 123 4567, 0020…) and Egyptian mobile (01001234567).
+  [/(?:\+|\b00)\d{1,3}[\s.-]?(?:\(?\d{1,4}\)?[\s.-]?){2,4}\d{2,4}\b/g, '[phone removed]'],
+  [/\b01[0125][\s-]?\d{4}[\s-]?\d{4}\b/g, '[phone removed]'],
+]
+
+// Card numbers: 13–19 digits (spaces or dashes allowed) that pass the Luhn check.
+const CARD = /\b\d(?:[ -]?\d){12,18}\b/g
+function luhn(digits) {
+  let sum = 0
+  for (let i = 0; i < digits.length; i++) {
+    let d = Number(digits[digits.length - 1 - i])
+    if (i % 2 === 1) d = d * 2 > 9 ? d * 2 - 9 : d * 2
+    sum += d
+  }
+  return sum % 10 === 0
+}
+
+/** Remove emails, phone numbers, card numbers and key-like strings. */
+export function redact(text) {
+  let out = String(text || '')
+  for (const [re, label] of REDACTIONS) out = out.replace(re, label)
+  return out.replace(CARD, m => {
+    const digits = m.replace(/\D/g, '')
+    // Long digit runs without separators are usually ad-account or order ids;
+    // only 15–16 digit runs (card length) are checked when unseparated.
+    const cardShaped = /[ -]/.test(m) || digits.length === 15 || digits.length === 16
+    return cardShaped && luhn(digits) ? '[card number removed]' : m
+  })
+}
+
+/**
+ * Did Analify accept this save? Reads the tool response: an error, a refusal,
+ * a wrong-brand or capture-off answer is not a save; a duplicate is (it was
+ * already in the Brain). Returns { ok, note }.
+ */
+export function saveResult(response) {
+  const found = { error: null, outcome: null, note: null }
+  // isText: a whole tool-result text block. Only a block that isn't JSON is
+  // read as plain words; values inside JSON (like a note) are never errors.
+  const visit = (v, depth = 0, isText = false) => {
+    if (v == null || depth > 6) return
+    if (typeof v === 'string') {
+      const parsed = parseJson(v)
+      if (parsed && typeof parsed === 'object') visit(parsed, depth + 1)
+      else if (isText && /error|invalid|unauthori[sz]ed|forbidden|refused/i.test(v) && !found.error) found.error = v.slice(0, 200)
+      return
+    }
+    if (Array.isArray(v)) return v.forEach(x => visit(x, depth + 1))
+    if (typeof v === 'object') {
+      if (v.isError === true && !found.error) found.error = 'tool error'
+      if (v.error && !found.error) found.error = typeof v.error === 'string' ? v.error : v.error.message || v.error.code || 'error'
+      if (typeof v.outcome === 'string' && !found.outcome) found.outcome = v.outcome
+      if (typeof v.note === 'string' && !found.note) found.note = v.note
+      for (const key of Object.keys(v)) if (key !== 'error') visit(v[key], depth + 1, key === 'text')
+    }
+  }
+  visit(response, 0, typeof response === 'string')
+  if (found.error) return { ok: false, note: String(found.error).slice(0, 200) }
+  if (['refused', 'wrong_org', 'capture_off', 'rejected', 'failed'].includes(found.outcome)) {
+    return { ok: false, note: `${found.outcome}${found.note ? `: ${found.note.slice(0, 160)}` : ''}` }
+  }
+  return { ok: true, note: null }
 }
 
 /** Brand name guessed from a website: "https://www.caliego.com/shop" -> "Caliego". */

@@ -273,3 +273,98 @@ test('add-sites makes one client per website', () => {
   assert.equal(status.find(s => s.name === 'Caliego').site, 'https://www.caliego.com/shop')
   assert.ok(status[0].missing.some(m => /analify-agency:connect/.test(m)))
 })
+
+// ── Fixes from the agency challenge review (2026-10-27) ──────────────────────
+
+test('only reports/ is offered to the Brain; private notes stay local', () => {
+  const { clientDir } = setup()
+  run('session-start.mjs', { session_id: 'p1', cwd: clientDir }, clientDir)
+  const tp = path.join(os.tmpdir(), `t-${Date.now()}-p.jsonl`)
+  fs.writeFileSync(tp, JSON.stringify(T[0]) + '\n')
+  const later = new Date(Date.now() + 2000)
+  fs.mkdirSync(path.join(clientDir, 'private'))
+  for (const f of ['private/agency-margin.md', 'notes.md', 'reports/audit.md']) {
+    fs.writeFileSync(path.join(clientDir, f), 'x')
+    fs.utimesSync(path.join(clientDir, f), later, later)
+  }
+  const out = run('stop.mjs', { session_id: 'p1', cwd: clientDir, transcript_path: tp, stop_hook_active: false }, clientDir)
+  assert.match(out.reason, /reports\/audit\.md/)
+  assert.doesNotMatch(out.reason, /agency-margin|notes\.md/)
+})
+
+test('session records are cleaned of emails, phones, cards and keys', () => {
+  const { clientDir } = setup()
+  const tp = transcript(clientDir, [
+    { type: 'user', message: { role: 'user', content: 'Customer mona@example.com, phone +20 100 123 4567 or 01001234567, card 4242 4242 4242 4242, key sk-live1234567890abcdef, password: hunter2. Spend on 2026-10-26 was 1,931 EGP on act_2248770182527668.' } },
+  ])
+  run('track.mjs', sessionStartPost(clientDir), clientDir)
+  for (let i = 0; i < 2; i++) run('track.mjs', post(clientDir, `mcp__${SERVER}__analify_call_tool`), clientDir)
+  run('stop.mjs', { session_id: 's1', cwd: clientDir, transcript_path: tp, stop_hook_active: false }, clientDir)
+  const dir = path.join(clientDir, '.analify', 'sessions')
+  const record = fs.readFileSync(path.join(dir, fs.readdirSync(dir)[0]), 'utf8')
+  for (const leak of ['mona@example.com', '123 4567', '01001234567', '4242 4242', 'sk-live', 'hunter2']) {
+    assert.ok(!record.includes(leak), `record still contains ${leak}`)
+  }
+  for (const kept of ['2026-10-26', '1,931 EGP', 'act_2248770182527668']) assert.ok(record.includes(kept), `record lost ${kept}`)
+})
+
+test('a refused save is not counted as saved, and is reported once', () => {
+  const { clientDir } = setup()
+  const tp = transcript(clientDir, T)
+  const stop = { session_id: 's1', cwd: clientDir, transcript_path: tp, stop_hook_active: false }
+  run('track.mjs', sessionStartPost(clientDir), clientDir)
+  for (let i = 0; i < 3; i++) run('track.mjs', post(clientDir, `mcp__${SERVER}__analify_call_tool`), clientDir)
+  const refused = {
+    ...post(clientDir, `mcp__${SERVER}__analify_brain_capture`),
+    tool_response: [{ type: 'text', text: JSON.stringify({ outcome: 'refused', note: 'no date' }) }],
+  }
+  run('track.mjs', refused, clientDir)
+  const first = run('stop.mjs', stop, clientDir)
+  assert.equal(first.decision, 'block')
+  assert.match(first.reason, /refused \(last reason: refused: no date\)/)
+  // Not reported twice; the real checkpoint follows.
+  const second = run('stop.mjs', stop, clientDir)
+  assert.match(second.reason, /BRAIN AUTOSAVE CHECKPOINT/)
+
+  const cfgBefore = JSON.parse(fs.readFileSync(path.join(clientDir, '.analify', 'client.json'), 'utf8'))
+  assert.equal(cfgBefore.lastSavedAt, undefined)
+  const stored = {
+    ...post(clientDir, `mcp__${SERVER}__analify_call_write_tool`, { tool_name: 'analify_brain_remember' }),
+    tool_response: [{ type: 'text', text: JSON.stringify({ outcome: 'stored', note: null }) }],
+  }
+  run('track.mjs', stored, clientDir)
+  const cfg = JSON.parse(fs.readFileSync(path.join(clientDir, '.analify', 'client.json'), 'utf8'))
+  assert.match(cfg.lastSavedAt, /^\d{4}-\d{2}-\d{2}$/)
+})
+
+test('two websites with the same name stay two clients, and rename keeps the connection', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agency '))
+  cli(['init', '--name', 'Zeyad Agency'], root)
+  const r = cli(['add-sites', 'nour.com', 'nour.ae', 'nour.com'], root)
+  assert.match(r.out, /✓ Nour \(nour\.com\)/)
+  assert.match(r.out, /✓ Nour AE \(nour\.ae\)/)
+  let status = JSON.parse(cli(['status', '--json'], root).out)
+  assert.deepEqual(status.map(s => s.name).sort(), ['Nour', 'Nour AE'])
+  // Same name, different website, by hand: refused instead of overwriting.
+  const clash = cli(['add', 'Nour', '--site', 'https://other.com'], root)
+  assert.equal(clash.code, 1)
+  assert.match(clash.err, /already exists for https:\/\/nour\.com/)
+
+  const renamed = cli(['rename', 'nour.ae', 'Nour Arabia'], root)
+  assert.equal(renamed.code, 0, renamed.err)
+  status = JSON.parse(cli(['status', '--json'], root).out)
+  const ar = status.find(s => s.name === 'Nour Arabia')
+  assert.equal(ar.connection, 'analify-nour-ae')
+  assert.ok(fs.existsSync(path.join(root, 'Clients', 'Nour Arabia', '.analify', 'client.json')))
+  assert.ok(!fs.existsSync(path.join(root, 'Clients', 'Nour AE')))
+})
+
+test('a partly disconnected ad platform and non-Shopify stores are reported correctly', async () => {
+  const { platformGaps } = await import('../scripts/lib.mjs')
+  const gaps = platformGaps({
+    salla: { connected: 1, disconnected: 0 },
+    meta_ads: { connected: 1, disconnected: 1, offAccounts: ['Old account'] },
+  })
+  assert.ok(!gaps.some(g => /no store/.test(g)), 'Salla counts as a store')
+  assert.ok(gaps.some(g => /1 of 2 Meta Ads accounts disconnected \(Old account\)/.test(g)))
+})
