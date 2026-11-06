@@ -168,9 +168,12 @@ export function renameClient(agency, from, to) {
  * Fallback when the `claude` command isn't on PATH: a project .mcp.json, which
  * Claude Code asks the user to approve once when the folder opens. The plugin
  * never writes Claude Code permission settings itself.
+ * Tests pass --no-claude-cli so they never touch the real Claude Code settings.
  */
+let useClaudeCli = true
+
 function registerConnection(root, serverName) {
-  if (!process.env.ANALIFY_NO_CLAUDE_CLI) {
+  if (useClaudeCli) {
     const r = spawnSync('claude', ['mcp', 'add', '--scope', 'local', '--transport', 'http', serverName, ANALIFY_MCP_URL], {
       cwd: root,
       encoding: 'utf8',
@@ -281,6 +284,7 @@ function nextSteps(client) {
 function main() {
   const [cmd, ...rest] = process.argv.slice(2)
   const args = parseArgs(rest)
+  if (args['no-claude-cli']) useClaudeCli = false
   const cwd = process.cwd()
   const autosave = args.autosave === undefined ? undefined : !/^(off|false|no|0)$/i.test(String(args.autosave))
 

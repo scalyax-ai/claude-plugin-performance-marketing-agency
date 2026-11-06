@@ -26,11 +26,10 @@ function run(script, input, cwd) {
 }
 
 function cli(args, cwd) {
-  const r = spawnSync('node', [path.join(scripts, 'clients.mjs'), ...args], {
+  // Never write the real ~/.claude.json from tests: use the .mcp.json fallback.
+  const r = spawnSync('node', [path.join(scripts, 'clients.mjs'), ...args, '--no-claude-cli'], {
     cwd,
     encoding: 'utf8',
-    // Never write the real ~/.claude.json from tests: use the .mcp.json fallback.
-    env: { ...process.env, ANALIFY_NO_CLAUDE_CLI: '1' },
   })
   return { code: r.status, out: r.stdout, err: r.stderr }
 }

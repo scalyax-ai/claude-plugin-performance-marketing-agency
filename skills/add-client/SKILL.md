@@ -3,7 +3,7 @@ name: add-client
 description: Add one client brand to the Analify agency workspace — creates its folder and its own Analify connection, then gives the exact setup steps.
 argument-hint: "\"Client name\" [--brand \"Analify Brand name\"] [--shopify store.myshopify.com] [--meta act_123] [--autosave on|off]"
 disable-model-invocation: true
-allowed-tools: Bash(node *)
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/clients.mjs:*)
 ---
 
 # Add a client

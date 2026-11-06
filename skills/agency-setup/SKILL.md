@@ -3,7 +3,7 @@ name: agency-setup
 description: Only create the agency folder (no clients). For the full guided setup use /analify-agency:onboard instead.
 argument-hint: "[agency name]"
 disable-model-invocation: true
-allowed-tools: Bash(node *)
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/clients.mjs:*), Bash(node --version)
 ---
 
 # Set up the agency workspace
