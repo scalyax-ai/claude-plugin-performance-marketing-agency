@@ -409,3 +409,25 @@ test('a new client folder carries its rules in CLAUDE.md, so they apply without 
   assert.match(md, /analify_brain_session_start/)
   assert.match(md, /"autosave": true/)
 })
+
+// Directory rule: bundled images may be shown in the README with Markdown image
+// syntax (and the icon named in plugin.json), never referenced from skills,
+// scripts or hooks, or written in backticks.
+test('bundled images are referenced only as README images or the listing icon', () => {
+  const repo = path.join(here, '..')
+  const IMG = /[\w./-]+\.(?:png|jpe?g|gif|webp|svg)\b/gi
+  const walk = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(e =>
+    e.name.startsWith('.') && e.name !== '.claude-plugin' ? []
+    : e.isDirectory() ? walk(path.join(dir, e.name))
+    : [path.join(dir, e.name)])
+  for (const file of walk(repo).filter(f => /\.(md|mjs|js|json|sh)$/.test(f))) {
+    const rel = path.relative(repo, file)
+    for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+      for (const ref of line.match(IMG) || []) {
+        const ok = (rel === 'README.md' && line.includes(`](${ref})`) && line.trimStart().startsWith('!['))
+          || (rel === path.join('.claude-plugin', 'plugin.json') && /"icon"/.test(line))
+        assert.ok(ok, `${rel}: image ${ref} referenced outside README image syntax or the icon field`)
+      }
+    }
+  }
+})
