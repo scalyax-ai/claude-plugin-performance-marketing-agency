@@ -10,8 +10,6 @@ With this plugin, every client brand gets its own folder in Claude Code, connect
 
 Open. Ask. Approve. Done.
 
-![Every platform and app your clients run, connected to the Analify Business Brain in Claude Code](./assets/analify-integrations.png)
-
 ## What changes for your agency
 
 - **No more tab-hopping.** One folder per client, connected to the client's store (Shopify, WooCommerce, Salla, EasyOrders or Amazon), Meta, TikTok, Google Ads, Snapchat and couriers through one Analify connection.
@@ -71,6 +69,13 @@ Run **`/analify-agency:onboard`** in the folder that will hold your clients. It 
 ## Daily work
 
 Open the client's folder and work as you normally do.
+
+Try these in a client's folder:
+
+1. "What did we actually make yesterday after ads, shipping and returns?"
+2. "Which Meta and TikTok ad sets lose money once returns are counted?"
+3. "Audit last month's Meta and TikTok spend and save the audit to reports/."
+4. "Give me the morning brief for this client." (or `/analify-agency:brief`)
 
 | Command | What it does |
 | :- | :- |
