@@ -15,7 +15,7 @@ Open. Ask. Approve. Done.
 ## What changes for your agency
 
 - **No more tab-hopping.** One folder per client, connected to the client's store (Shopify, WooCommerce, Salla, EasyOrders or Amazon), Meta, TikTok, Google Ads, Snapchat and couriers through one Analify connection.
-- **One client per folder, checked.** Inside a client's folder, every other Analify connection is blocked, and the client's own connection stays blocked until Analify confirms it's signed in to that client's brand. After that, the brand is checked by its Analify ID every session. This guards against using the wrong client's Analify data; it doesn't stop someone opening another client's files on the same computer, so keep each person to their own clients' folders.
+- **One client per folder, checked.** Each client's folder sees only that client's Analify connection. With the full version, every other Analify connection is also blocked inside the folder, and the client's own connection stays blocked until Analify confirms it's signed in to that client's brand. After that, the brand is checked by its Analify ID every session. This guards against using the wrong client's Analify data; it doesn't stop someone opening another client's files on the same computer, so keep each person to their own clients' folders.
 - **Work that adapts to each client.** The plugin reads what each client has connected and works with exactly that. It says plainly what's missing, for example "no Shopify, so no real profit yet".
 - **The work stays with the client.** After real work, Claude saves to that client's Business Brain:
   - findings, with the data behind them
@@ -34,7 +34,12 @@ Open. Ask. Approve. Done.
 
 ## Install
 
-In Claude Code:
+There are two versions. Both have the same onboarding, client folders, connections and commands.
+
+- **Full version (recommended for agencies), from our marketplace below.** Adds the automatic checks: it blocks other clients' connections, confirms the brand before any Analify call, and saves work to the client's Brain at the end of each piece of work without being asked.
+- **Directory version, from Claude's plugin directory.** No automatic checks. Each client folder's `CLAUDE.md` tells Claude the same rules, and Claude follows them, but nothing enforces them. Use `/analify-agency:save` to save on demand.
+
+Full version, in Claude Code:
 
 ```
 /plugin install analify-agency --marketplace scalyax-ai/claude-plugin-performance-marketing-agency
@@ -135,13 +140,13 @@ Connected in Analify, and available to Claude through the same client connection
 
 ## What runs on your machine
 
-- **Hooks**, small Node.js scripts. They do nothing outside folders created by this plugin, and they make no network calls.
+- **Hooks (full version only)**, small Node.js scripts. They do nothing outside folders created by this plugin, and they make no network calls.
   - **Session start:** tells Claude which client the folder is for and what that client has connected.
   - **Before each Analify call:** blocks connections that belong to other businesses.
   - **After each call:** notes which brand the connection is signed in to, which platforms are connected, and how much client work was done.
   - **At the end of a turn:** writes a session record into the folder's `.analify/sessions/` and, after real work, asks Claude to save to the client's Brain. To write that record, it reads the current session's transcript and removes emails, phone numbers, card numbers and key-like strings. It also tells you when Analify refused a save, so missing work isn't mistaken for saved work.
 - **Setup script** (`scripts/clients.mjs`):
-  - creates the client folders
+  - creates the client folders, each with a `CLAUDE.md` that tells Claude which client and connection the folder is for
   - registers each client's connection with Claude Code's own `claude mcp add --scope local`, which saves it in your Claude Code settings for that folder only
   - if the `claude` command isn't available, writes a `.mcp.json` in the client folder instead, and Claude Code asks you to approve it once
   - during onboarding, opens Analify's website in your browser

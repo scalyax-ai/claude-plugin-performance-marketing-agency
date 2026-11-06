@@ -3,7 +3,7 @@ name: onboard
 description: Onboard a performance marketing agency onto Analify in Claude Code — agency name, every client's website, one folder and one Analify connection per client, then connecting each client's Shopify, Meta, TikTok, Google Ads and Snapchat accounts in Analify. Start here.
 argument-hint: "[agency name]"
 disable-model-invocation: true
-allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/clients.mjs:*), Read, Write
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/clients.mjs:*), Read
 ---
 
 # Onboard the agency

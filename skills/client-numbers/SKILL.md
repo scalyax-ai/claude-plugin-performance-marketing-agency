@@ -1,11 +1,11 @@
 ---
 name: client-numbers
-description: Answer questions about a client brand's numbers (profit, ad spend, ROAS, shipping, returns, margins, delivery success) from that client's own Analify connection, inside its client folder. Use when the session context says ANALIFY AGENCY WORKSPACE and the question is about this client's store or ads.
+description: Answer questions about a client brand's numbers (profit, ad spend, ROAS, shipping, returns, margins, delivery success) from that client's own Analify connection, inside its client folder. Use when the session context or the folder's CLAUDE.md says ANALIFY AGENCY WORKSPACE and the question is about this client's store or ads.
 ---
 
 # A client's numbers
 
-Use only this client's `mcp__analify-<client>__` tools (the session context names them).
+Use only this client's `mcp__analify-<client>__` tools (the session context or the folder's CLAUDE.md names them).
 
 1. Confirm the connection first with `analify_brain_session_start` if it isn't confirmed this session.
 2. `analify_brain_search` for what this client's Brain already knows, then `analify_get_context` to see which platforms are connected.
