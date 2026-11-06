@@ -10,8 +10,69 @@
     {
       "name": "analify-agency",
       "source": "./",
-      "description": "One AI workspace for every ecommerce client your agency runs: guided onboarding, one folder and one live Analify connection per client (Shopify, Meta, TikTok, Google Ads, Snapchat), a guard against mixing clients, and work saved to each client's Business Brain.",
-      "category": "productivity"
+      "description": "The full version, with the client guard and Brain autosave. One AI workspace for every ecommerce client your agency runs: guided onboarding, one folder and one live Analify connection per client (Shopify, Meta, TikTok, Google Ads, Snapchat), a guard against mixing clients, and work saved to each client's Business Brain.",
+      "category": "productivity",
+      "hooks": {
+        "SessionStart": [
+          {
+            "matcher": "startup|resume|clear|compact",
+            "hooks": [
+              {
+                "type": "command",
+                "command": "node",
+                "args": [
+                  "${CLAUDE_PLUGIN_ROOT}/scripts/session-start.mjs"
+                ],
+                "timeout": 10
+              }
+            ]
+          }
+        ],
+        "PreToolUse": [
+          {
+            "matcher": "mcp__.*",
+            "hooks": [
+              {
+                "type": "command",
+                "command": "node",
+                "args": [
+                  "${CLAUDE_PLUGIN_ROOT}/scripts/guard.mjs"
+                ],
+                "timeout": 10
+              }
+            ]
+          }
+        ],
+        "PostToolUse": [
+          {
+            "matcher": "mcp__.*|Write|Edit",
+            "hooks": [
+              {
+                "type": "command",
+                "command": "node",
+                "args": [
+                  "${CLAUDE_PLUGIN_ROOT}/scripts/track.mjs"
+                ],
+                "timeout": 10
+              }
+            ]
+          }
+        ],
+        "Stop": [
+          {
+            "hooks": [
+              {
+                "type": "command",
+                "command": "node",
+                "args": [
+                  "${CLAUDE_PLUGIN_ROOT}/scripts/stop.mjs"
+                ],
+                "timeout": 15
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "renames": {

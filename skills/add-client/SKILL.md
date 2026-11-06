@@ -12,4 +12,4 @@ allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/clients.mjs:*)
    `node "${CLAUDE_PLUGIN_ROOT}/scripts/clients.mjs" add $ARGUMENTS`
    Quote a client name with spaces. If the script says the folder id can't be made (for example an Arabic-only name), rerun with `--slug <latin-name>`.
 2. Show the user the "Next" steps the script printed, as a short numbered list. Keep the exact Brand name and connection name.
-3. Then, in the client's folder, `/analify-agency:connect` signs Claude in and reads what's connected. Remind them: the Brand name picked on the Analify sign-in screen must be the one in this folder. If they pick another business by mistake, the plugin blocks every Analify call in that folder and says how to fix it.
+3. Then, in the client's folder, `/analify-agency:connect` signs Claude in and reads what's connected. Remind them: the Brand name picked on the Analify sign-in screen must be the one in this folder. If they pick another business by mistake, Claude stops and says how to fix it (the full version also blocks every Analify call in that folder until it is fixed).

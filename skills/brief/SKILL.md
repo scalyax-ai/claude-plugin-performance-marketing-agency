@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Client brief
 
-Only in a client folder (the session context names the client and its `mcp__analify-<client>__` tools). In the agency root, tell the user to open the client's folder instead.
+Only in a client folder (the session context or the folder's CLAUDE.md names the client and its `mcp__analify-<client>__` tools). In the agency root, tell the user to open the client's folder instead.
 
 1. Confirm the connection: `analify_brain_session_start` on this client's connection (skip if already confirmed this session).
 2. `analify_get_context`, then `analify_brain_search` for what the Brain already knows (targets, rules, past findings) and `analify_brain_operating_contract`.

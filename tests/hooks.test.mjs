@@ -26,7 +26,7 @@ function run(script, input, cwd) {
 }
 
 function cli(args, cwd) {
-  // Never write the real ~/.claude.json from tests: use the .mcp.json fallback.
+  // Tests never register connections with the claude command: use the .mcp.json fallback.
   const r = spawnSync('node', [path.join(scripts, 'clients.mjs'), ...args, '--no-claude-cli'], {
     cwd,
     encoding: 'utf8',
@@ -366,4 +366,46 @@ test('a partly disconnected ad platform and non-Shopify stores are reported corr
   })
   assert.ok(!gaps.some(g => /no store/.test(g)), 'Salla counts as a store')
   assert.ok(gaps.some(g => /1 of 2 Meta Ads accounts disconnected \(Old account\)/.test(g)))
+})
+
+// Two versions from one repo: the directory reads the plugin root, which must
+// ship no hooks; our marketplace entry adds the hooks for the full version.
+test('the plugin root ships no hooks; the marketplace entry adds them', () => {
+  const repo = path.join(here, '..')
+  assert.equal(fs.existsSync(path.join(repo, 'hooks')), false, 'hooks/ at the plugin root would put command hooks in the directory version')
+  const manifest = JSON.parse(fs.readFileSync(path.join(repo, '.claude-plugin', 'plugin.json'), 'utf8'))
+  assert.equal(manifest.hooks, undefined)
+  const market = JSON.parse(fs.readFileSync(path.join(repo, '.claude-plugin', 'marketplace.json'), 'utf8'))
+  const entry = market.plugins.find(p => p.name === manifest.name)
+  assert.ok(entry, 'marketplace entry must use the plugin.json name')
+  assert.notEqual(entry.strict, false, 'entry hooks need strict mode (a strict:false entry with hooks fails to load)')
+  const events = Object.keys(entry.hooks || {})
+  assert.deepEqual(events.sort(), ['PostToolUse', 'PreToolUse', 'SessionStart', 'Stop'])
+  for (const groups of Object.values(entry.hooks)) {
+    for (const h of groups.flatMap(g => g.hooks)) {
+      const file = h.args[0].replace('${CLAUDE_PLUGIN_ROOT}', repo)
+      assert.ok(fs.existsSync(file), `hook script missing: ${h.args[0]}`)
+    }
+  }
+})
+
+test('every skill names only our own script in allowed-tools', () => {
+  const skillsDir = path.join(here, '..', 'skills')
+  for (const name of fs.readdirSync(skillsDir)) {
+    const file = path.join(skillsDir, name, 'SKILL.md')
+    if (!fs.existsSync(file)) continue
+    const text = fs.readFileSync(file, 'utf8')
+    const line = /^allowed-tools:(.*)$/m.exec(text)?.[1] || ''
+    assert.doesNotMatch(line, /Bash\((?!node \$\{CLAUDE_PLUGIN_ROOT\}\/scripts\/clients\.mjs:\*\)|node --version\))/, `${name}: broad Bash permission`)
+    assert.doesNotMatch(line, /\bWrite\b(?!\()/, `${name}: unscoped Write`)
+  }
+})
+
+test('a new client folder carries its rules in CLAUDE.md, so they apply without hooks', () => {
+  const { clientDir } = setup()
+  const md = fs.readFileSync(path.join(clientDir, 'CLAUDE.md'), 'utf8')
+  assert.match(md, /ANALIFY AGENCY WORKSPACE — client: Analify Ads/)
+  assert.match(md, new RegExp(`mcp__${SERVER}__`))
+  assert.match(md, /analify_brain_session_start/)
+  assert.match(md, /"autosave": true/)
 })

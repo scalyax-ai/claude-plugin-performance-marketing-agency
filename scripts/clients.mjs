@@ -97,16 +97,37 @@ export function addClient(agency, opts) {
   if (!fs.existsSync(claudeMd)) {
     fs.writeFileSync(
       claudeMd,
-      `# ${name}\n\nAgency workspace for ${name} (Analify Brand "${brand}").\n\n` +
-        `- Analify connection for this client: \`${serverName}\`. Never use another Analify connection here.\n` +
-        `- Put audits and reports in \`reports/\` as Markdown or CSV so they can be added to ${brand}'s Brain.\n` +
-        `- Add notes about how we work for this client below.\n`
+      clientClaudeMd({ name, brand, serverName })
     )
   }
   return { root, config, connection, updated: Boolean(previous) }
 }
 
 /** "https://www.Nour.com/shop" -> "nour.com": how two websites are compared. */
+/**
+ * The client folder's CLAUDE.md. Claude Code loads it in every session opened
+ * in the folder, so the client rules apply even in the version without hooks
+ * (the full version's hooks add the checks on top). Written once; the agency
+ * owns it after that.
+ */
+export function clientClaudeMd({ name, brand, serverName }) {
+  return [
+    `# ${name}`,
+    '',
+    `ANALIFY AGENCY WORKSPACE — client: ${name} (Analify Brand "${brand}"). Follow the analify-agency:agency-workspace skill.`,
+    '',
+    `- This folder is for ${name} only. Use only the \`mcp__${serverName}__\` tools for Analify. Every other Analify connection on this computer belongs to a different business: never use it here, and never bring another client's numbers or notes into this folder.`,
+    `- Before any other Analify call, call \`analify_brain_session_start\` on \`${serverName}\`. If it names a Brand other than "${brand}", stop and tell the user to reconnect: run /mcp, pick ${serverName}, clear authentication, sign in again and choose ${brand}.`,
+    `- Put finished audits and reports in \`reports/\` as Markdown or CSV. Only \`reports/\` is shared with ${brand}'s Brain; agency-only notes go in \`private/\`.`,
+    `- Brain autosave: when \`.analify/client.json\` has \`"autosave": true\`, save findings, decisions and reports from finished work to ${brand}'s Brain (see /analify-agency:save). When it is false, save only when the user asks.`,
+    '',
+    '## How we work for this client',
+    '',
+    '(Add notes here.)',
+    '',
+  ].join('\n')
+}
+
 export function siteKey(site) {
   try {
     const url = new URL(/^https?:\/\//i.test(site) ? site : `https://${site}`)
