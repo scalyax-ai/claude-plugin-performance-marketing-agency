@@ -2,7 +2,7 @@
 name: clients
 description: Show the setup checklist for every client in the Analify agency workspace — which are linked to Claude, which are missing Shopify or Meta, when each last saved to its Brain.
 disable-model-invocation: true
-allowed-tools: Bash(node *)
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/clients.mjs:*)
 ---
 
 # Client checklist

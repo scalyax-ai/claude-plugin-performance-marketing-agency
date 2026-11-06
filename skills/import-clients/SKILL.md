@@ -3,7 +3,7 @@ name: import-clients
 description: Create client folders for many brands at once from a CSV file (columns name, brand, site, shopify, meta).
 argument-hint: "<clients.csv> [--autosave on|off]"
 disable-model-invocation: true
-allowed-tools: Bash(node *), Read
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/clients.mjs:*), Read
 ---
 
 # Import clients from a CSV

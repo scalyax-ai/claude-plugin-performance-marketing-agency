@@ -3,7 +3,7 @@ name: rename-client
 description: Rename a client in the Analify agency workspace (fix a name made from a website, or match the brand's real name). Moves its folder and keeps its Analify connection and sign-in.
 argument-hint: "\"<current name or website>\" \"<new name>\" [--brand \"<Analify brand name>\"]"
 disable-model-invocation: true
-allowed-tools: Bash(node *)
+allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/clients.mjs:*)
 ---
 
 # Rename a client
