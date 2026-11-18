@@ -1,0 +1,31 @@
+{
+  "name": "analify",
+  "displayName": "Analify for Performance Marketing Agencies",
+  "version": "2.4.2",
+  "description": "One AI workspace for every ecommerce client your performance marketing agency runs, inside Claude Code. Each client brand gets its own folder and live Analify connection to Shopify, Meta, TikTok, Google Ads, Snapchat and couriers, and audits, findings and decisions are saved to each client's Business Brain.",
+  "author": {
+    "name": "Scalyax",
+    "email": "analify@scalyax.ai",
+    "url": "https://analify.scalyax.ai"
+  },
+  "homepage": "https://analify-ai.readme.io/docs/mcp",
+  "repository": "https://github.com/scalyax-ai/claude-plugin-performance-marketing-agency",
+  "license": "MIT",
+  "keywords": [
+    "agency",
+    "performance-marketing",
+    "ecommerce",
+    "meta-ads",
+    "tiktok-ads",
+    "google-ads",
+    "snapchat-ads",
+    "shopify",
+    "business-brain",
+    "multi-client"
+  ],
+  "icon": "./icon.png",
+  "documentationUrl": "https://analify-ai.readme.io/docs/mcp",
+  "supportUrl": "https://analify.scalyax.ai/en/contact",
+  "privacyPolicyUrl": "https://analify.scalyax.ai/en/privacy",
+  "termsOfServiceUrl": "https://analify.scalyax.ai/en/terms"
+}

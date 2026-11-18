@@ -10,6 +10,8 @@ With this plugin, every client brand gets its own folder in Claude Code, connect
 
 Open. Ask. Approve. Done.
 
+> **Claude plugin directory:** the directory listing installs the script-free version in [`directory/`](./directory) (plugin name `analify`). This root folder is the full version for the Scalyax marketplace, with the automatic client guard and Brain autosave.
+
 ## What changes for your agency
 
 - **No more tab-hopping.** One folder per client, connected to the client's store (Shopify, WooCommerce, Salla, EasyOrders or Amazon), Meta, TikTok, Google Ads, Snapchat and couriers through one Analify connection.
