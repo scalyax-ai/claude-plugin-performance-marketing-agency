@@ -1,6 +1,6 @@
 ![Analify](./icon.png)
 
-# Analify for Performance Marketing Agencies
+# Analify
 
 **One AI workspace for every ecommerce client you run, inside Claude Code.**
 
